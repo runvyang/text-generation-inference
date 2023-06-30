@@ -15,6 +15,17 @@ class Weights:
                             f"Key {k} was found in multiple files: {filename} and {routing[k]}"
                         )
                     routing[k] = filename
+
+                metadata = f.metadata()
+                metadata.pop('framework', None)
+                for k, v in metadata.items():
+                    if k in routing:
+                        raise RuntimeError(
+                            f"Key {k} was found in multiple files: {filename} and {routing[k]}"
+                        )
+                    if v in routing:
+                        routing[k] = routing[v]
+
         if aliases is None:
             aliases = {}
         self.aliases = aliases
@@ -45,6 +56,7 @@ class Weights:
     def _get_slice(self, tensor_name: str):
         filename, tensor_name= self.get_filename(tensor_name)
         f = self._get_handle(filename)
+        tensor_name = f.metadata().get(tensor_name, tensor_name)
         slice_ = f.get_slice(tensor_name)
         return slice_
 
@@ -54,6 +66,7 @@ class Weights:
     def get_tensor(self, tensor_name: str):
         filename, tensor_name = self.get_filename(tensor_name)
         f = self._get_handle(filename)
+        tensor_name = f.metadata().get(tensor_name, tensor_name)
         tensor = f.get_tensor(tensor_name)
         # Special case for gptq which shouldn't convert
         # u4 which are disguised as int32
@@ -68,6 +81,7 @@ class Weights:
         rank = self.process_group.rank()
 
         f = self._get_handle(filename)
+        tensor_name = f.metadata().get(tensor_name, tensor_name)
         slice_ = f.get_slice(tensor_name)
         size = slice_.get_shape()[dim]
         block_size = size // world_size
