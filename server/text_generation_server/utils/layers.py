@@ -356,11 +356,18 @@ try:
 
         @classmethod
         def static(cls, dim, base, device):
+            #run: extending context https://colab.research.google.com/drive/1VI2nhlyKvd5cw4-zHvAIk00cAVj2lCCC#scrollTo=b80b3f37
+            max_position_embeddings = 16384
+            a = 8 #Alpha value
+            base = base * a ** (dim / (dim-2)) #Base change formula
             inv_freq = 1.0 / (
                 base
                 ** (torch.arange(0, dim, 2, device=device, dtype=torch.float32) / dim)
             )
-            return cls(inv_freq)
+
+            ins = cls(inv_freq)
+            ins._update_cos_sin_cache(torch.float16, device, max_position_embeddings)
+            return ins
 
         @classmethod
         def load(cls, prefix, weights):
