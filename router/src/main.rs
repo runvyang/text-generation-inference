@@ -7,9 +7,10 @@ use opentelemetry::sdk::trace::Sampler;
 use opentelemetry::sdk::Resource;
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use std::time::Duration;
+use std::str::FromStr;
 use text_generation_client::ShardedClient;
 use text_generation_router::{server, HubModelInfo};
 use tokenizers::{FromPretrainedParameters, Tokenizer};
@@ -40,6 +41,8 @@ struct Args {
     max_batch_total_tokens: u32,
     #[clap(default_value = "20", long, env)]
     max_waiting_tokens: usize,
+    #[clap(default_value = "0.0.0.0", long, env)]
+    bind: String,
     #[clap(default_value = "3000", long, short, env)]
     port: u16,
     #[clap(default_value = "/tmp/text-generation-server-0", long, env)]
@@ -82,6 +85,7 @@ fn main() -> Result<(), std::io::Error> {
         waiting_served_ratio,
         mut max_batch_total_tokens,
         max_waiting_tokens,
+        bind,
         port,
         master_shard_uds_path,
         tokenizer_name,
@@ -193,7 +197,8 @@ fn main() -> Result<(), std::io::Error> {
             tracing::info!("Connected");
 
             // Binds on localhost
-            let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
+            let ip_addr = IpAddr::from_str(&bind).expect(&format!("{} is not a valid ip address", bind));
+            let addr = SocketAddr::new(ip_addr, port);
 
             // Run server
             server::run(

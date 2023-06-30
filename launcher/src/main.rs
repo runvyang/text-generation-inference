@@ -180,9 +180,13 @@ struct Args {
     /// for end users.
     #[clap(default_value = "20", long, env)]
     max_waiting_tokens: usize,
-    #[clap(default_value = "3000", long, short, env)]
+
+    /// The address to bind, default to 0.0.0.0
+    #[clap(default_value = "0.0.0.0", long, env)]
+    bind: String,
 
     /// The port to listen on.
+    #[clap(default_value = "3000", long, short, env)]
     port: u16,
 
     /// The name of the socket for gRPC communication between the webserver
@@ -826,6 +830,8 @@ fn spawn_webserver(
         args.waiting_served_ratio.to_string(),
         "--max-waiting-tokens".to_string(),
         args.max_waiting_tokens.to_string(),
+        "--bind".to_string(),
+        args.bind.to_string(),
         "--port".to_string(),
         args.port.to_string(),
         "--master-shard-uds-path".to_string(),
